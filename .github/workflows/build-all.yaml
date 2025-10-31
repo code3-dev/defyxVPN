@@ -2,8 +2,11 @@ name: Build All Platforms
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - dev13
+  pull_request:
+    branches:
+      - dev13
   workflow_dispatch:
     inputs:
       tag:
