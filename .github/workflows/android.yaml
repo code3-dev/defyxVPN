@@ -1,0 +1,62 @@
+name: Build Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version (e.g., 1.0.0)'
+        required: true
+        type: string
+      build_number:
+        description: 'Build number'
+        required: false
+        type: string
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # flutter-version: '3.24.0'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: flutter pub get
+        
+      - name: Copy env example to env
+        run: cp .env.example .env
+        
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+          
+      - name: Build Android release
+        run: |
+          flutter build apk --release
+          
+      - name: Build Android app bundle
+        run: |
+          flutter build appbundle --release
+          
+      - name: Archive APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          
+      - name: Archive App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-appbundle
+          path: build/app/outputs/bundle/release/app-release.aab

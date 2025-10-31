@@ -34,4 +34,4 @@ Runner/GeneratedPluginRegistrant.*
 !default.perspectivev3
 
 # Remove Core
-IosDXcore.xcframework
+# IosDXcore.xcframework

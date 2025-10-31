@@ -1,0 +1,8 @@
+framework module "IosDXcore" {
+	header "ref.h"
+    header "Ios.objc.h"
+    header "Universe.objc.h"
+    header "IosDXcore.h"
+
+    export *
+}

@@ -1,0 +1,58 @@
+name: Build iOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version (e.g., 1.0.0)'
+        required: true
+        type: string
+      build_number:
+        description: 'Build number'
+        required: false
+        type: string
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # flutter-version: '3.24.0'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: flutter pub get
+        
+      - name: Copy env example to env
+        run: cp .env.example .env
+        
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+        
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+          
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          
+      - name: Build iOS IPA
+        run: |
+          flutter build ipa --release --no-codesign
+          
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: build/ios/ipa/*.ipa
