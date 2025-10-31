@@ -40,22 +40,50 @@ jobs:
       - name: Run code generation
         run: dart run build_runner build --delete-conflicting-outputs
           
-      - name: Build Android release
+      - name: Build universal APK
+        run: flutter build apk --release
+        
+      - name: Build split APKs
+        run: flutter build apk --split-per-abi --release
+          
+      - name: Rename APKs
         run: |
-          flutter build apk --release
-          
-      - name: Build Android app bundle
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk release/defyx-universal.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release/defyx-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release/defyx-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk release/defyx-x86_64.apk
+      
+      - name: Get tag name
+        id: get_tag
         run: |
-          flutter build appbundle --release
-          
-      - name: Archive APK
-        uses: actions/upload-artifact@v4
+          if [[ $GITHUB_EVENT_NAME == 'workflow_dispatch' ]]; then
+            echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+          else
+            echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
         with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          
-      - name: Archive App Bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-appbundle
-          path: build/app/outputs/bundle/release/app-release.aab
+          tag_name: ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}
+          draft: false
+          prerelease: false
+          files: |
+            release/defyx-universal.apk
+            release/defyx-armeabi-v7a.apk
+            release/defyx-arm64-v8a.apk
+            release/defyx-x86_64.apk
+          body: |
+            ## Installation
+            
+            ### Download
+            
+            | Architecture | Download Link |
+            |-------------|---------------|
+            | Universal   | <a href="https://github.com/code3-dev/defyxVPN/releases/download/${{ env.TAG_NAME }}/defyx-universal.apk"><img src="https://img.shields.io/badge/Android-Universal-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android Universal"></a> |
+            | armeabi-v7a | <a href="https://github.com/code3-dev/defyxVPN/releases/download/${{ env.TAG_NAME }}/defyx-armeabi-v7a.apk"><img src="https://img.shields.io/badge/Android-armeabi--v7a-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android armeabi-v7a"></a> |
+            | arm64-v8a   | <a href="https://github.com/code3-dev/defyxVPN/releases/download/${{ env.TAG_NAME }}/defyx-arm64-v8a.apk"><img src="https://img.shields.io/badge/Android-arm64--v8a-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android arm64-v8a"></a> |
+            | x86_64      | <a href="https://github.com/code3-dev/defyxVPN/releases/download/${{ env.TAG_NAME }}/defyx-x86_64.apk"><img src="https://img.shields.io/badge/Android-x86_64-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android x86_64"></a> |
